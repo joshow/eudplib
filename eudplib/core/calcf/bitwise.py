@@ -146,8 +146,8 @@ def f_bitsplit(a):
 # -------
 
 
-@_EUDPredefineParam(1)
-@_EUDPredefineReturn(1, 2)
+@_EUDPredefineParam(0)
+@_EUDPredefineReturn(1)
 @ef.EUDFunc
 def _exp2_vv(n):
     ret = _exp2_vv._frets[0]

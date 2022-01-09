@@ -135,21 +135,22 @@ def _EUDPredefineParam(*args):
     3. Always SetDest when assign to other variables!
     4. No EUDFunc call in function body!
     """
-    fnargs, slicer = list(), list()
+    fnargs = list()
     for arg in args:
-        if arg is CurrentPlayer:
+        if isinstance(arg, int):
+            while True:
+                try:
+                    fnargs.append(_ev[arg])
+                except IndexError:
+                    _ev.append(c.EUDVariable())
+                else:
+                    break
+        elif arg is CurrentPlayer:
             fnargs.append(ut.EPD(0x6509B0))
         elif isinstance(arg, (list, tuple)):
             fnargs.extend(arg)
         else:
-            slicer.append(arg)
-    while slicer:
-        try:
-            fnargs.extend(ut.FlattenList(_ev[slice(*slicer)]))
-        except IndexError:
-            _ev.append(c.EUDVariable())
-        else:
-            break
+            raise ut.EPError(f"Unexpected predefined param: {type(arg)}, {arg}")
 
     def wrapper(f):
         f._fargs = fnargs
@@ -167,17 +168,24 @@ def _EUDPredefineReturn(*frets):
     3. Don't modify Dest in function body!
     4. No EUDFunc call in function body!
     """
-    while frets:
-        try:
-            frets = ut.FlattenList(_ev[slice(*frets)])
-        except IndexError:
-            _ev.append(c.EUDVariable())
+    fnrets = list()
+    for ret in frets:
+        if isinstance(ret, int):
+            while True:
+                try:
+                    fnrets.append(_ev[ret])
+                except IndexError:
+                    _ev.append(c.EUDVariable())
+                else:
+                    break
+        elif isinstance(ret, (list, tuple)):
+            fnrets.extend(ret)
         else:
-            break
+            raise ut.EPError(f"Unexpected predefined return: {type(ret)}, {ret}")
 
     def wrapper(f):
-        f._frets = frets
-        f._retn = len(frets)
+        f._frets = fnrets
+        f._retn = len(fnrets)
         return f
 
     return wrapper

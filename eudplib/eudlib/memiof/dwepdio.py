@@ -33,7 +33,7 @@ from ...core.eudfunc.eudf import _EUDPredefineParam, _EUDPredefineReturn
 from ...localize import _
 
 
-@_EUDPredefineReturn(2)
+@_EUDPredefineReturn(0, 1)
 @_EUDPredefineParam(c.CurrentPlayer)
 @c.EUDFunc
 def f_dwepdread_epd(targetplayer):
@@ -58,7 +58,7 @@ def f_dwepdread_epd(targetplayer):
     # return ptr, epd
 
 
-@_EUDPredefineReturn(1)
+@_EUDPredefineReturn(0)
 @_EUDPredefineParam(c.CurrentPlayer)
 @c.EUDFunc
 def f_dwread_epd(targetplayer):

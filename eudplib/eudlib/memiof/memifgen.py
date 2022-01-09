@@ -47,7 +47,7 @@ def f_readgen_epd(mask, *args, docstring=None, _fdict={}, _check_empty=False):
     )
     if key not in _subfdict:
 
-        @_EUDPredefineReturn(len(args))
+        @_EUDPredefineReturn(*range(len(args)))
         @_EUDPredefineParam(c.CurrentPlayer)
         @c.EUDFunc
         def f_read_epd_template(targetplayer):
@@ -94,7 +94,7 @@ def f_readgen_cp(mask, *args, docstring=None, _fdict={}, _check_empty=False):
     )
     if key not in _subfdict:
 
-        @_EUDPredefineReturn(len(args))
+        @_EUDPredefineReturn(*range(len(args)))
         @c.EUDFunc
         def readerf():
             ret = readerf._frets

@@ -119,8 +119,8 @@ def f_constmul(number):
         return mulfdict[number]
     except KeyError:
 
-        @_EUDPredefineParam(1)
-        @_EUDPredefineReturn(1, 2)
+        @_EUDPredefineParam(0)
+        @_EUDPredefineReturn(1)
         @ef.EUDFunc
         def _mulf(a):
             ret = _mulf._frets[0]
@@ -161,8 +161,8 @@ def f_constdiv(number):
         return divfdict[number]
     except KeyError:
 
-        @_EUDPredefineReturn(2)
-        @_EUDPredefineParam(1, 2)
+        @_EUDPredefineReturn(0, 1)
+        @_EUDPredefineParam(1)
         @ef.EUDFunc
         def _divf(a):
             quotient = _divf._frets[0]
@@ -188,7 +188,7 @@ def f_constdiv(number):
 # -------
 
 
-@_EUDPredefineReturn(1)
+@_EUDPredefineReturn(0)
 @ef.EUDFunc
 def _f_mul(a, b):
     ret = _f_mul._frets[0]
@@ -220,29 +220,38 @@ def _f_mul(a, b):
     # return ret
 
 
+_selfvalue = ac.Forward()
+_divider = ev.EUDVariable(_selfvalue, rt.Add, 0)
+_selfvalue << ut.EPD(_divider.getValueAddr())
+
+
+@_EUDPredefineReturn(0, 1)
+@_EUDPredefineParam(1, (_divider,))
 @ef.EUDFunc
 def _f_div(a, b):
-    ret, x = ev.EUDCreateVariables(2)
+    quotient, remainder = _f_div._frets
+    quotient << 0
 
-    # Init
-    ev.SeqCompute([(ret, rt.SetTo, 0), (x, rt.SetTo, b)])
+    rt.PushTriggerScope()
+    over_dividend = _divider.AtLeast(0)
+    skip = ac.Forward()
+    skip << rt.RawTrigger(conditions=over_dividend, actions=rt.SetNextPtr(skip, 0))
+    rt.PopTriggerScope()
 
-    # Chain ac.Forward decl
-    chain_x0 = [ac.Forward() for _ in range(32)]
-    chain_x1 = [ac.Forward() for _ in range(32)]
-    chain = [ac.Forward() for _ in range(32)]
+    div_trig, div_cond, div_act = [[ac.Forward() for _ in range(32)] for _ in range(3)]
 
     # Fill in chain
     for i in range(32):
+        c.VProc(_divider, _divider.Set)
         ev.SeqCompute(
             [(ut.EPD(chain_x0[i]), rt.SetTo, x), (ut.EPD(chain_x1[i]), rt.SetTo, x)]
         )
 
-        # Skip if over 0x80000000
+        # Skip if over dividend
         p1, p2, p3 = ac.Forward(), ac.Forward(), ac.Forward()
         p1 << rt.RawTrigger(
             nextptr=p2,
-            conditions=x.AtLeastX(1, 0x80000000),
+            conditions=x.AtLeast(1, 0x80000000),
             actions=rt.SetNextPtr(p1, p3),
         )
         p3 << rt.RawTrigger(nextptr=chain[i], actions=rt.SetNextPtr(p1, p2))
@@ -252,13 +261,13 @@ def _f_div(a, b):
 
     # Run division chain
     for i in range(31, -1, -1):
-        cx0, cx1 = ac.Forward(), ac.Forward()
-        chain[i] << rt.RawTrigger(
-            conditions=[cx0 << a.AtLeast(0)],
-            actions=[cx1 << a.SubtractNumber(0), ret.AddNumber(2 ** i)],
+        div_c = remainder.AtLeast(0)
+        div_a = remainder.SubtractNumber(0)
+        div_trig[i] << rt.RawTrigger(
+            conditions=div_c,
+            actions=[div_a, quotient.AddNumber(2 ** i)],
         )
+        div_cond[i] << EPD(div_c + 8)
+        div_act[i] << EPD(div_a + 20)
 
-        chain_x0[i] << cx0 + 8
-        chain_x1[i] << cx1 + 20
-
-    return ret, a  # a : remainder
+    # return quotient, remainder
