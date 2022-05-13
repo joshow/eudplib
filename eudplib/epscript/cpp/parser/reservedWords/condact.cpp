@@ -48,7 +48,7 @@ bool isActionName(const std::string& name) {
 }
 
 bool isActionAllpName(const std::string& name) {
-    for(const char* aname : actionList) {
+    for(const char* aname : actionAllpList) {
         if(name == aname) return true;
     }
     return false;
